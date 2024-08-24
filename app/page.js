@@ -1,60 +1,70 @@
 'use client'
 import Image from "next/image";
-
+import { useState } from 'react';
 import { SignedIn, SignedOut, UserButton} from "@clerk/nextjs";
 import Head from "next/head";
-import { AppBar, Button, Container, Toolbar, Typography, Box, Grid} from "@mui/material";
+import { AppBar, Button, Container, Toolbar, Typography, Box, Grid, Snackbar } from "@mui/material";
 
 import Link from 'next/link';
-//import getStripe from "@/utils/get-stripe.js";
+import getStripe from '@/utils/get-stripe.js';
 
 export default function Home() {
-  //  const handleSubmit = async () => {
-  //  // Send a POST request to create a checkout session
-  //   const checkoutSession = await fetch('/api/generate/checkout_sessions', {
-  //     method: 'POST',
-  //     headers: {
-  //       origin: 'http://localhost:3000',
-  //     },
-  //   });
+   const handleSubmit = async (plan) => {
+    try {
+      const checkoutSession = await fetch('/api/generate/checkout_sessions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ plan }),
+      });
 
-  //   // Parse the response as JSON
-  //   const session = await checkoutSession.json();
+      if (!checkoutSession.ok) {
+        const errorData = await checkoutSession.json();
+        throw new Error(errorData.message || 'Failed to create checkout session');
+      }
 
-  //   // Check if there was an error creating the session
-  //   if (session.statusCode === 500) {
-  //     console.error(session.message);
-  //     return;
-  //   }
+      const session = await checkoutSession.json();
+      const stripe = await getStripe();
+      const { error } = await stripe.redirectToCheckout({ sessionId: session.id });
 
-  //   // Load the Stripe library
-  //   const stripe = await getStripe();
+      if (error) {
+        throw new Error(error.message);
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      setShowError(true);
+    }
+  }
 
-  //   // Redirect to the Stripe checkout page
-  //   const {error} = await stripe.redirectToCheckout({ 
-  //     sessionId: session.id 
-  //   });
+  const [showError, setShowError] = useState(false);
 
-  //   // Handle any errors during redirection
-  //   if (error) {
-  //     console.warn(error.message);
-  //     return;
-  //   }
-  // }
+  const handleGetStarted = () => {
+    // Replace this condition with your actual check for user payment status
+    const userHasPaid = false;
+
+    if (!userHasPaid) {
+      setShowError(true);
+    } else {
+      // Redirect to the sign-up page or wherever you want paid users to go
+      window.location.href = '/sign-up';
+    }
+  };
+
   return (
-    <Container maxWidth="100vh">
+    <Container maxWidth="lg">
       <Head>
         <title>Flashcards</title>
         <meta name="description" content="Flashcards" />
       </Head>
 
-      <AppBar position="static">
+      <AppBar position="static" color="transparent" elevation={0}>
         <Toolbar>
-          <Typography variant="h6" style={{ flexGrow: 1 }}>Flashcards</Typography>
+          <Typography variant="h6" style={{ flexGrow: 1, fontWeight: 'bold' }}>Flashcards</Typography>
           
           <SignedOut>
-            <Button color="inherit" href="/sign-in"> Login</Button>
-            <Button color="inherit" href="/sign-up"> Signed Up</Button>
+            <Button color="primary" variant="outlined" href="/sign-in" sx={{ mr: 2 }}> Login</Button>
+            <Button color="primary" variant="contained" href="/sign-up"> Sign Up</Button>
           </SignedOut>
 
           <SignedIn>
@@ -65,26 +75,38 @@ export default function Home() {
       </AppBar>
 
 
-      <Box sx={{ textAlign: "center", my:4 }}>
-        <Typography variant="h2" gutterBottom>Welcome to Flashcards Saas</Typography>
-        <Typography variant="h5" gutterBottom>
-          {' '}
+      <Box sx={{ textAlign: "center", my: 8 }}>
+        <Typography variant="h2" gutterBottom fontWeight="bold">Welcome to Flashcards SaaS</Typography>
+        <Typography variant="h5" gutterBottom color="text.secondary">
           The easiest way to create flashcards from scratch
         </Typography>
 
 
-          <Button variant="contained" color="primary" sx={{ mt: 3}} component="a">
+          <Button 
+            variant="contained" 
+            color="primary" 
+            size="large" 
+            sx={{ mt: 4 }}
+            href="/generate"
+          >
             Get Started
           </Button>
+
+          <Snackbar
+            open={showError}
+            autoHideDuration={6000}
+            onClose={() => setShowError(false)}
+            message="Please subscribe to a plan before getting started."
+          />
    
           
       </Box>
 
-      <Box sx={{my:6}}>
-        <Typography variant="h4" component="h2" sx={{ mb: 4 }}>
-          Features:
+      <Box sx={{my: 8}}>
+        <Typography variant="h3" component="h2" sx={{ mb: 6, textAlign: 'center' }}>
+          Features
         </Typography>
-        <Grid container spacing={4}>
+        <Grid container spacing={6}>
           <Grid item xs={12} md={4}>
             <Typography variant="h5">
               Accessible Anytime, Anywhere
@@ -105,47 +127,27 @@ export default function Home() {
           </Grid>
         </Grid>
         
-        <Box sx={{my:6}} textAlign="center">
-          <Typography variant="h4" sx={{ mb: 4 }}>Pricing</Typography>
-          <Grid container spacing={4}>
-            <Grid item xs={12} md={6}>
+        <Box sx={{my: 8}} textAlign="center">
+          <Typography variant="h3" sx={{ mb: 6 }}>Pricing</Typography>
+         
+              
+              
               <Box sx={{ 
                 p:3,
                 border: "1px solid",
                 borderColor: "grey.300",
                 borderRadius: "4px",
                 height: '100%'
-              }}>
-                <Typography variant="h5" gutterBottom >
-                  Basic Plan
-                </Typography> 
-                <Typography variant="h6"> $5/month</Typography>
-                <Typography>Access basic features and limited storage
                 
-                </Typography>
-                <Button variant="contained" color="primary" sx={{ mt: 2}}>Choose Basic</Button>
-              </Box>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              
-              
-              <Box sx={{ 
-                p:3,
-                border: "1px solid",
-                borderColor: "grey.300",
-                borderRadius: "4px",
-                height: '100%'
               }}>
                 <Typography variant="h5" gutterBottom>
                   Pro Plan
                 </Typography>
                 <Typography variant="h6"> $10/month</Typography>
                 <Typography>Unlimited flashcards and access to advanced features</Typography>
-                <Button variant="contained" color="primary" sx={{ mt: 2}} >Choose Pro</Button>
+                <Button variant="contained" color="primary" sx={{ mt: 2 }}  onClick={() => handleSubmit('pro')}>Choose Pro</Button>
               </Box>
-            </Grid>
-           
-          </Grid>
+            
         </Box>
       </Box>
   </Container>

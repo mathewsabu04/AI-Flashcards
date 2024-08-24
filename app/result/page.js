@@ -1,102 +1,60 @@
 'use client'
 
-import {useEffect,useState} from 'react'
-import { useRouter } from 'next/navigation';
-import getStripe from '@/utils/get-stripe';
+import { useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
-import { Box, Typography } from '@mui/material';
 
+export default function ResultPage() {
+  const [status, setStatus] = useState('loading');
+  const [error, setError] = useState(null);
+  const searchParams = useSearchParams();
 
-const ResultPage = () => {
-    const router = useRouter();
-    const searchParams = useSearchParams();
+  useEffect(() => {
     const sessionId = searchParams.get('session_id');
-    const [loading,setLoading] = useState(true);
-    const [session,setSession] = useState(null);
-    const [error,setError] = useState(null);
+    if (sessionId) {
+      verifyPayment(sessionId);
+    } else {
+      setStatus('error');
+      setError('No session ID found in URL');
+    }
+  }, [searchParams]);
 
-    useEffect(() => {
-        const fetchSession = async () => {
-            if(!sessionId) return;
-            try{
-                const res = await fetch(`/api/generate/checkout_sessions/${sessionId}`);
-                const data = await res.json();
-                if(res.ok)
-                {
-                    setSession(data);
-                }
-                else
-                {
-                    setError(data.message);
-                }
-            }
-            catch(error){
-                setError(error.message);
-            }
-            finally{
-                setLoading(false);
-            }
-        }
-        fetchSession();
-    }, [sessionId]);
+  async function verifyPayment(sessionId) {
+    try {
+      const response = await fetch('/api/verify-payment', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ sessionId }),
+      });
 
-    if(loading) 
-        return (
-    <Container maxWidth="100vw" sx={{
-        textAlign: 'center',
-        mt:4
+      if (response.ok) {
+        const data = await response.json();
+        setStatus('success');
+      } else {
+        const errorData = await response.json();
+        setStatus('error');
+        setError(`Server error: ${errorData.message || response.statusText}`);
+      }
+    } catch (error) {
+      console.error('Error verifying payment:', error);
+      setStatus('error');
+      setError(`Client error: ${error.message}`);
+    }
+  }
 
-    }}>
+  if (status === 'loading') {
+    return <div>Verifying your payment...</div>;
+  }
 
-        <CircularProgress>
-            <Typography variant="h6" gutterBottom>
-                Loading...
-            </Typography>
-        </CircularProgress>
-    </Container>
-    )
-    if(error)
-        return (
-            <Container maxWidth="100vw" sx={{
-                textAlign: 'center',
-                mt:4
-            }}>
-                <Typography variant="h6" color="error">
-                    {error}
-                </Typography> 
-            </Container>
-        );
+  if (status === 'success') {
+    return <div>Payment successful! Your subscription is now active.</div>;
+  }
 
-    return (
-        <Container maxWidth="100vw" sx={{
-            textAlign: 'center',
-            mt:4
-        }}>
-            {
-                session.payment_status === 'paid' ? (
-                    <>
-                        <Typography variant="h6" gutterBottom>
-                            Payment successful
-                        </Typography>
-                        <Box sx={{ mt: 2 }}>
-                            <Typography variant='h6'>Session ID: {session.id}</Typography>
-                            <Typography variant='h6'>We have received your payment</Typography>
-                        </Box>
-                    </>
-                ) : (
-                    <>
-                        <Typography variant="h6" gutterBottom>
-                            Payment unsuccessful
-                        </Typography>
-                        <Box sx={{ mt: 2 }}>
-                            <Typography variant='h6'>Session ID: {session.id}</Typography>
-                            <Typography variant='h6'>There was an issue with your payment</Typography>
-                        </Box>
-                    </>
-                )
-            }
-        </Container>
-    )
+  return (
+    <div>
+      <p>There was an error processing your payment. Please contact support.</p>
+      <p>Error details: {error}</p>
+    </div>
+  );
 }
-
-export default ResultPage;

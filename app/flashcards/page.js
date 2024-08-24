@@ -1,13 +1,14 @@
 'use client'
 // Import necessary dependencies
-import { useState, useEffect, use } from "react";
+import { useState, useEffect } from "react";
 import { db } from "@/firebase";
-import { CollectionReference, doc, setDoc, getDoc} from "firebase/firestore";
-import { userRouter } from "next/navigation";
-import { CardActionArea,Container,Grid,Card,CardContent,Typography } from "@mui/material";
-import { useUser } from "@clerk/nextjs";
+import { doc, setDoc, getDoc, collection } from "firebase/firestore";
 import { useRouter } from "next/navigation";
-import { collection } from "firebase/firestore";
+import { 
+  CardActionArea, Container, Grid, Card, CardContent, 
+  Typography, Button, Box, AppBar, Toolbar, 
+} from "@mui/material";
+import { useUser } from "@clerk/nextjs";
 
 export default function Flashcards() {
     // Get user authentication state
@@ -49,20 +50,46 @@ export default function Flashcards() {
     }
 
     return (
-        <Container maxWidth="100vw">
-            <Grid container spacing={3} sx={{ mt: 4 }}>
-                {flashcards.map((flashcard, index) => (
-                    <Grid item xs={12} sm={6} md={4} key={index}>
-                        <Card onClick={() => handleCardClick(flashcard.name)}>
-                            <CardActionArea onClick={() => handleCardClick(flashcard.name)}>
-                                <CardContent>
-                                    <Typography variant="h6">{flashcard.name}</Typography>
-                                </CardContent>
-                            </CardActionArea>
-                        </Card>
-                    </Grid>
-                ))}
-            </Grid>
-        </Container>
+        <>
+            <AppBar position="static" color="primary" elevation={0}>
+                <Toolbar>
+                    <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
+                        My Flashcards
+                    </Typography>
+                   
+                </Toolbar>
+            </AppBar>
+            <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
+                <Typography variant="h4" align="center" sx={{ mt: 4, mb: 10 }}>Flashcards</Typography>
+                <Grid container spacing={3}>
+                    {flashcards.map((flashcard, index) => (
+                        <Grid item xs={12} sm={6} md={4} key={index}>
+                            <Card 
+                                onClick={() => handleCardClick(flashcard.name)}
+                                sx={{
+                                    height: '100%',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    transition: '0.3s',
+                                    '&:hover': {
+                                        transform: 'translateY(-5px)',
+                                        boxShadow: 3,
+                                    },
+                                }}
+                            >
+                                <CardActionArea sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column', alignItems: 'stretch', justifyContent: 'center' }}>
+                                    <CardContent>
+                                        <Typography variant="h6" align="center">{flashcard.name}</Typography>
+                                        <Typography variant="body2" color="text.secondary" align="center">
+                                            {flashcard.cards && flashcard.cards.length > 0 ? `${flashcard.cards.length} cards` : ''}
+                                        </Typography>
+                                    </CardContent>
+                                </CardActionArea>
+                            </Card>
+                        </Grid>
+                    ))}
+                </Grid>
+            </Container>
+        </>
     );
 }

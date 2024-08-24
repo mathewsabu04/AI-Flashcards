@@ -6,6 +6,23 @@ const formatAmountForStripe = (amount, currency) => {
   return Math.round(amount * 100)
 }
 
+export async function GET(req) {
+  const searchParams = req.nextUrl.searchParams;
+  const sessionId = searchParams.get('session_id');
+  try {
+    const checkoutSession = await stripe.checkout.sessions.retrieve(sessionId);
+    return NextResponse.json(checkoutSession, {
+      status: 200
+    });
+  } catch (error) {
+    console.error('Error retrieving checkout session:', error);
+    return NextResponse.json({
+      status: 500,
+      message: error.message
+    });
+  }
+}
+
 export async function POST(req) {
   const params = {
     mode: 'subscription',
@@ -30,12 +47,16 @@ export async function POST(req) {
     cancel_url: `${req.headers.get('origin')}/result?session_id={CHECKOUT_SESSION_ID}`,
   };
 
-
+  try {
     const session = await stripe.checkout.sessions.create(params);
-    return NextResponse.json(session,{
-        status: 200
+    return NextResponse.json(session, {
+      status: 200
     });
- 
-    
-  
+  } catch (error) {
+    console.error('Error creating checkout session:', error);
+    return NextResponse.json({
+      status: 500,
+      message: error.message
+    });
+  }
 }
